@@ -1,3 +1,4 @@
+import epoch
 import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -6,6 +7,7 @@ from keras.optimizers import Adam
 import numpy as np
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # 이미지 데이터셋 경로
 data_dir = 'C:/Users/장희수/PycharmProjects/backend/data_image'
@@ -15,7 +17,7 @@ datagen = ImageDataGenerator(rescale=1./255)  # 이미지를 0과 1 사이로 �
 
 # 이미지 데이터셋 불러오기
 batch_size = 10
-image_size = (64, 64)  # 이미지 사이즈 조정
+image_size = (200, 200)  # 이미지 사이즈 조정
 class_mode = 'categorical'  # 분류형 레이블 사용
 
 train_data = datagen.flow_from_directory(
@@ -53,7 +55,7 @@ def build_gan(generator, discriminator):
 
 # 모델 및 하이퍼파라미터 설정
 latent_dim = 100  # 잠재 공간의 차원
-img_shape = (64, 64, 3)  # 이미지의 형태
+img_shape = (200, 200, 3)  # 이미지의 형태
 
 generator = build_generator(latent_dim, img_shape)
 discriminator = build_discriminator(img_shape)
@@ -65,7 +67,9 @@ gan = build_gan(generator, discriminator)
 gan.compile(optimizer=Adam(), loss='binary_crossentropy')
 
 # GAN 모델 학습
-epochs = 200  # 학습 횟수
+epochs = 1000  # 학습 횟수
+num_images_to_save = 1  # 저장할 이미지 개수
+
 for epoch in range(epochs):
     for _ in range(len(train_data)):
         real_images, labels = train_data.next()
@@ -84,7 +88,10 @@ for epoch in range(epochs):
         valid_labels = np.ones((batch_size, 1))
         g_loss = gan.train_on_batch(noise, valid_labels)
 
-
+    # 각 epoch마다 이미지를 생성하고 저장
+    for i in range(num_images_to_save):
+        noise = np.random.normal(0, 1, (1, latent_dim))  # 각기 다른 노이즈 생성
+        generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
 
         # 디렉토리 경로 설정
         output_dir = 'C:/Users/장희수/PycharmProjects/backend/save_new_image'
@@ -92,19 +99,14 @@ for epoch in range(epochs):
         # 디렉토리가 존재하지 않으면 생성
         #os.makedirs(output_dir, exist_ok=True)
 
-        # GAN 모델 학습 이후에 이미지 저장
-        num_images_to_save = 10  # 저장할 이미지 개수
-        for i in range(num_images_to_save):
-            noise = np.random.normal(0, 1, (1, latent_dim))  # 랜덤 잠재 벡터 생성
-            generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
-
-            # 이미지 크기 조정 및 uint8 형식으로 변환하여 저장
-            image_to_save = generated_image.astype(np.uint8)
-            image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)  # 이미지 크기 조정
-            image_path = os.path.join(output_dir, f"new_image_{i + 1}.png")
-            image.save(image_path)
+        # 이미지 크기 조정 및 uint8 형식으로 변환하여 저장
+        image_to_save = generated_image.astype(np.uint8)
+        image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)  # 이미지 크기 조정
+        image_path = os.path.join(output_dir, f"new_image_{epoch + 1}_{i + 1}.png")  # epoch와 순서대로 파일명 지정
+        image.save(image_path)
 
         print(f"{num_images_to_save}개의 이미지를 {output_dir} 디렉토리에 64x64 크기로 저장했습니다.")
+
 
 # 이후에 test 이미지에 감정을 추가하는 서비스를 구현할 수 있습니다.
 # 예를 들어, 생성된 이미지를 통해 감정을 추가하거나 특정 감정을 나타내는 이미지를 생성할 수 있습니다.
