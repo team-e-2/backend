@@ -16,7 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('send_image/<str:image_name>/', views.send_image, name='send_image'),  # 이미지 보내기 URL 매핑
+    path('get_image/<str:image_name>/', views.get_image, name='get_image'),  # 이미지 받기 URL 매핑
+    # 다른 URL 패턴들...
 ]
+
