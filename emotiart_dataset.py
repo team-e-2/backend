@@ -10,7 +10,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # 이미지 데이터셋 경로
-data_dir = 'C:/Users/장희수/PycharmProjects/backend/data_image'
+data_dir = r'C:\Users\JangHeesu\PycharmProjects\backend\data_image'
 
 # 이미지 데이터를 읽고 전처리하는 ImageDataGenerator 생성
 datagen = ImageDataGenerator(rescale=1./255)  # 이미지를 0과 1 사이로 스케일링
@@ -67,8 +67,8 @@ gan = build_gan(generator, discriminator)
 gan.compile(optimizer=Adam(), loss='binary_crossentropy')
 
 # GAN 모델 학습
-epochs = 1000  # 학습 횟수
-num_images_to_save = 1  # 저장할 이미지 개수
+epochs = 700  # 학습 횟수
+num_images_to_save = 2  # 저장할 이미지 개수
 
 for epoch in range(epochs):
     for _ in range(len(train_data)):
@@ -94,7 +94,7 @@ for epoch in range(epochs):
         generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
 
         # 디렉토리 경로 설정
-        output_dir = 'C:/Users/장희수/PycharmProjects/backend/save_new_image'
+        output_dir = r'C:\Users\JangHeesu\PycharmProjects\backend\create_image'
 
         # 디렉토리가 존재하지 않으면 생성
         #os.makedirs(output_dir, exist_ok=True)
@@ -105,7 +105,36 @@ for epoch in range(epochs):
         image_path = os.path.join(output_dir, f"new_image_{epoch + 1}_{i + 1}.png")  # epoch와 순서대로 파일명 지정
         image.save(image_path)
 
-        print(f"{num_images_to_save}개의 이미지를 {output_dir} 디렉토리에 64x64 크기로 저장했습니다.")
+        print(f"new_image_{epoch + 1}_{i + 1}.png 이미지를 {output_dir} 디렉토리에 저장했습니다.")
+
+
+
+# 이미지 변환 작업 전 GAN 모델 학습 코드 (생략)
+
+# 새로운 이미지 경로
+new_image_path = r'C:\Users\JangHeesu\PycharmProjects\backend\save_image'
+
+# 새로운 이미지 로드 및 전처리
+new_image = Image.open(new_image_path)
+new_image = new_image.resize((100,100))  # 이미지 크기 조정
+new_image = np.array(new_image) / 255.0  # 이미지 스케일링
+
+# GAN 모델 로드 및 이미지 생성
+latent_dim = 100
+noise = np.random.normal(0, 1, (1, latent_dim))  # 랜덤 노이즈 생성
+generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
+
+# 생성된 이미지와 새로운 이미지를 결합하여 새로운 이미지 생성
+blended_image = np.clip((generated_image + new_image) / 2.0, 0.0, 255.0)  # 두 이미지를 합쳐서 특정 작업 수행
+
+# 새로운 이미지 저장
+output_dir = r'C:\Users\JangHeesu\PycharmProjects\backend\emotiart_image'
+os.makedirs(output_dir, exist_ok=True)
+modified_image = Image.fromarray(blended_image.astype(np.uint8))
+modified_image.save(os.path.join(output_dir, 'modified_image.png'))
+
+# 이미지 변환 작업 완료
+print("이미지 변환 작업이 완료되었습니다.")
 
 
 # 이후에 test 이미지에 감정을 추가하는 서비스를 구현할 수 있습니다.
