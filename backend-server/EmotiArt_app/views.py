@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect
 from .form import ImageUploadForm  # 이미지 업로드 폼 불러오기
 
 def upload_image(request):
-    if request.method == 'GET':
+    if request.method == 'POST':
         form = ImageUploadForm(request.POST, request.FILES)
         if form.is_valid():
             drawing = form.cleaned_data['drawing']
@@ -12,4 +12,4 @@ def upload_image(request):
             return HttpResponseRedirect('/success/')  # 업로드 성공 후 리디렉션
     else:
         form = ImageUploadForm()
-    return render(request, 'templates/upload.html', {'form': form})
+    return render(request, 'templates/upload.html',{'form': form})
