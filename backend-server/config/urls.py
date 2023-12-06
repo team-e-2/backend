@@ -14,14 +14,18 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path
 from . import views
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('send_image/<str:image_name>/', views.send_image, name='send_image'),  # 이미지 보내기 URL 매핑
-    path('get_image/<str:image_name>/', views.get_image, name='get_image'),  # 이미지 받기 URL 매핑
-    # 다른 URL 패턴들...
-]
 
+from django.contrib import admin
+from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns = ([
+    path('admin/', admin.site.urls),
+    path('upload/', views.upload_image, name='upload_image')
+]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
