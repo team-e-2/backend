@@ -1,0 +1,15 @@
+<!-- rnn_app/templates/show_images.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Similar Images</title>
+</head>
+<body>
+
+{% for image in images %}
+    <img src="{{ image_dir }}/{{ image }}" alt="{{ image }}">
+{% endfor %}
+
+</body>
+</html>
