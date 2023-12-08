@@ -7,13 +7,15 @@ from rest_framework.response import Response
 from .models import UploadedImage
 from django.core.exceptions import ValidationError
 
+
 @api_view(['POST'])
 def upload_image(request):
     print("Received request:", request.POST)
     print("Received files:", request.FILES)
     if request.method == 'POST':
-        form = ImageUploadForm(request.POST, request.FILES)
+        form = ImageUploadForm(request.POST)
         drawing_file = request.FILES.get('drawing')
+        # drawing_file = request.GET.get('drawing')
 
         try:
             if not drawing_file:

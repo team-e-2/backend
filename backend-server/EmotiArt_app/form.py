@@ -4,12 +4,14 @@ from .models import UploadedImage
 import os
 import uuid
 
-class ImageUploadForm(forms.Form):
-    drawing = forms.ImageField()
 
+class ImageUploadForm(forms.ModelForm):
     class Meta:
-        # 폼 속성 설정
-        enctype = 'multipart/form-data'
+        model = UploadedImage
+        fields = ['drawing']
+
+    def __init__(self, *args, **kwargs):
+        super(ImageUploadForm, self).__init__(*args, **kwargs)
 
     def save(self, commit=True):
         drawing = self.cleaned_data['drawing']
