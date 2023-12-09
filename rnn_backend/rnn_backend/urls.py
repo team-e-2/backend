@@ -14,8 +14,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
 
 # myproject/urls.py
 
@@ -24,6 +22,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('rnn_app.urls')),  # 앱의 URLs로 루트 경로 포함
+    path('rnn_app/', include('rnn_app.urls')),  # 앱의 URLs로 루트 경로 포함
     # 다른 URL 패턴들을 추가할 수 있습니다.
 ]

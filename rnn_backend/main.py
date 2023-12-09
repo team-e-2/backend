@@ -1,15 +1,16 @@
 import os
-import numpy as np
-import tensorflow as tf
-from keras import layers, models
-from keras.preprocessing.image import img_to_array, array_to_img
-from sklearn.metrics.pairwise import cosine_similarity
-from PIL import Image, ImageDraw
+import random
+import shutil
+
 import ndjson
-import requests
+import numpy as np
+from PIL import Image, ImageDraw
+from keras import layers, models
+from keras.preprocessing.image import img_to_array
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Directory to save similar images
-save_dir = "similar_images"
+save_dir = "rnn_app/similar_images"
 
 # Quick, Draw! 데이터셋 경로
 dataset_path = "rnn_app/rnn_tutorial_data"
@@ -17,13 +18,14 @@ dataset_path = "rnn_app/rnn_tutorial_data"
 # 클래스명 정의 (원하는 클래스들로 수정)
 class_names = ["cat"]
 
+
 # 데이터 로드 함수
 def load_quickdraw_data(dataset_path, class_names):
     images = []
     labels = []
 
     for i, class_name in enumerate(class_names):
-        file_path = os.path.join(dataset_path, f"{class_name}.ndjson")
+        file_path = os.path.join(dataset_path, "cat.ndjson")
 
         with open(file_path) as f:
             data = ndjson.load(f)
@@ -64,7 +66,7 @@ def find_similar_images(input_image, dataset_images, dataset_labels, save_dir):
     num_classes = len(np.unique(dataset_labels))
 
     # 저장된 모델 불러오기 또는 새로 학습
-    model_path = "saved_model.h5"
+    model_path = "rnn_app/saved_model.h5"
     if os.path.exists(model_path):
         model = models.load_model(model_path)
     else:
@@ -102,20 +104,35 @@ def load_and_preprocess_input_image(image_path):
 # 클래스에 해당하는 Quick, Draw! 데이터 로드
 dataset_images, dataset_labels = load_quickdraw_data(dataset_path, class_names)
 
-# 예시: 입력된 그림과 유사한 그림 찾기
-input_image_path = "media/images/cat.png"
-input_image = load_and_preprocess_input_image(input_image_path)
+# input_image_path 디렉토리에서 무작위 이미지 파일 선택
+input_image_path = "media/images/"
+image_files = [f for f in os.listdir(input_image_path) if f.endswith(('.png', '.jpg', '.jpeg'))]
+random_image_file = random.choice(image_files)
+selected_image_path = os.path.join(input_image_path, random_image_file)
+
+# 선택된 이미지를 load_and_preprocess_input_image 함수를 사용하여 처리
+input_image = load_and_preprocess_input_image(selected_image_path)
+
+# 유사한 그림 찾기
 similar_images = find_similar_images(input_image, dataset_images, dataset_labels, save_dir)
 
 # 결과 출력
 print("Input Image:")
-Image.open(input_image_path).show()
 
 print("\nSimilar Images:")
 for i, img_array in enumerate(similar_images):
     img = Image.fromarray((img_array.squeeze() * 255).astype(np.uint8), mode="L")
-    img.show()
     save_path = os.path.join(save_dir, f"similar_image_{i}.png")
     img.save(save_path)
 
-
+# ../media/images/ 디렉토리에 있는 모든 이미지 삭제
+media_images_path = "media/images/"
+for file_name in os.listdir(media_images_path):
+    file_path = os.path.join(media_images_path, file_name)
+    try:
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+    except Exception as e:
+        print(f"Error while deleting {file_path}: {e}")
