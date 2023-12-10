@@ -74,39 +74,39 @@ total_epochs = 100  # 총 에폭 수
 
 
 
-for epoch in range(total_epochs):
-    # 각 에폭마다 이미지 데이터를 이용하여 GAN 모델 학습
-    for _ in range(len(train_data)):
-        real_images, labels = train_data.next()
-
-        # 판별자 훈련
-        noise = np.random.normal(0, 1, (batch_size, latent_dim))
-        generated_images = generator.predict(noise)
-
-        d_loss_real = discriminator.train_on_batch(real_images, np.ones((batch_size, 1)))
-        d_loss_fake = discriminator.train_on_batch(generated_images, np.zeros((batch_size, 1)))
-        d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
-
-        # 생성자 훈련
-        noise = np.random.normal(0, 1, (batch_size, latent_dim))
-        g_loss = gan.train_on_batch(noise, np.ones((batch_size, 1)))
-
-        # 마지막 에폭에서만 이미지를 생성하고 저장
-        if epoch == (total_epochs - 1):
-        # 생성된 이미지 저장
-            noise = np.random.normal(0, 1, (1, latent_dim))
-        generated_image = generator.predict(noise)[0] * 255.0
-
-        image_to_save = generated_image.astype(np.uint8)
-        image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)
-        image_path = os.path.join(output_dir, f"generated_image_final_epoch.png")
-        image.save(image_path)
-
-        print(f"generated_image_final_epoch.png 이미지를 {output_dir} 디렉토리에 저장했습니다.")
-        break
+# for epoch in range(total_epochs):
+#     # 각 에폭마다 이미지 데이터를 이용하여 GAN 모델 학습
+#     for _ in range(len(train_data)):
+#         real_images, labels = train_data.next()
+#
+#         # 판별자 훈련
+#         noise = np.random.normal(0, 1, (batch_size, latent_dim))
+#         generated_images = generator.predict(noise)
+#
+#         d_loss_real = discriminator.train_on_batch(real_images, np.ones((batch_size, 1)))
+#         d_loss_fake = discriminator.train_on_batch(generated_images, np.zeros((batch_size, 1)))
+#         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+#
+#         # 생성자 훈련
+#         noise = np.random.normal(0, 1, (batch_size, latent_dim))
+#         g_loss = gan.train_on_batch(noise, np.ones((batch_size, 1)))
+#
+#         # 마지막 에폭에서만 이미지를 생성하고 저장
+#         if epoch == (total_epochs - 1):
+#         # 생성된 이미지 저장
+#             noise = np.random.normal(0, 1, (1, latent_dim))
+#         generated_image = generator.predict(noise)[0] * 255.0
+#
+#         image_to_save = generated_image.astype(np.uint8)
+#         image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)
+#         image_path = os.path.join(output_dir, f"generated_image_final_epoch.png")
+#         image.save(image_path)
+#
+#         print(f"generated_image_final_epoch.png 이미지를 {output_dir} 디렉토리에 저장했습니다.")
+#         break
 
 # 새로운 이미지 경로
-new_image_path = r'E:\PycharmProjects\backend\rnn_backend\rnn_app\frontended_save_image'
+new_image_path = r'E:\PycharmProjects\backend\rnn_backend\rnn_app\frontended_save_image/cat.png'
 
 # 새로운 이미지 로드 및 전처리
 new_image = Image.open(new_image_path)
@@ -118,11 +118,29 @@ latent_dim = 100
 noise = np.random.normal(0, 1, (1, latent_dim))  # 랜덤 노이즈 생성
 generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
 
+# 생성된 이미지와 새로운 이미지의 채널 수 맞추기
+if new_image.shape[-1] != generated_image.shape[-1]:
+    new_image = np.stack([new_image] * generated_image.shape[-1], axis=-1)
+
+
+
+# 이미지의 shape를 출력하여 확인
+print(f"Generated image shape: {generated_image.shape}")
+print(f"New image shape: {new_image.shape}")
+
+# 이미지의 shape가 맞지 않으면 resize를 통해 맞춤
+if generated_image.shape != new_image.shape:
+    new_image = np.array(Image.fromarray(new_image.astype(np.uint8)).resize((generated_image.shape[1], generated_image.shape[0]), Image.LANCZOS))
+    print(f"Resized new image shape: {new_image.shape}")
+
+# shape가 맞는지 다시 확인
+print(f"After resize, new image shape: {new_image.shape}")
+
 # 생성된 이미지와 새로운 이미지를 결합하여 새로운 이미지 생성
 blended_image = np.clip((generated_image + new_image) / 2.0, 0.0, 255.0)  # 두 이미지를 합쳐서 특정 작업 수행
 
 # 새로운 이미지 저장
-output_dir = r'fianl_emotiart_image'
+output_dir = r'final_emotiart_image'
 os.makedirs(output_dir, exist_ok=True)
 modified_image = Image.fromarray(blended_image.astype(np.uint8))
 modified_image.save(os.path.join(output_dir, 'modified_image.png'))

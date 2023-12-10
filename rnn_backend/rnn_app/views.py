@@ -1,4 +1,6 @@
+import io
 import os
+
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -174,29 +176,32 @@ def receive_image(request):
 
 
 
+
+
 @csrf_exempt
 def change_image(request):
     if request.method == 'POST' and request.FILES.get('drawing'):
         image_file = request.FILES['drawing']
 
-        # 이미지 저장 경로
-        save_path = "rnn_app/frontended_save_image"
-
-        import os
-        # 클라이언트로부터 받은 이미지를 저장
-        with open(os.path.join(save_path, image_file.name), 'wb+') as destination:
-            for chunk in image_file.chunks():
-                destination.write(chunk)
-
-        import os
-
-        import gan
-        import numpy as np
+        from django.http import FileResponse, HttpResponseNotFound, JsonResponse
+        from django.views.decorators.csrf import csrf_exempt
+        from django.conf import settings
         from PIL import Image
+        import os
+        import random
+        import numpy as np
         from keras.layers import Dense, Flatten, Reshape
         from keras.models import Sequential
         from keras.optimizers import Adam
         from keras.preprocessing.image import ImageDataGenerator
+
+        # 이미지 저장 경로
+        save_path = "rnn_app/frontended_save_image/"
+
+        # 클라이언트로부터 받은 이미지를 저장
+        with open(os.path.join(save_path, image_file.name), 'wb+') as destination:
+            for chunk in image_file.chunks():
+                destination.write(chunk)
 
         # 이미지 데이터셋 경로
         data_dir = "rnn_app/data_image"
@@ -256,9 +261,7 @@ def change_image(request):
         gan.compile(optimizer=Adam(), loss='binary_crossentropy')
 
         # GAN 모델 학습
-
         output_dir = "rnn_app/gan_create_image"
-
         total_epochs = 100  # 총 에폭 수
 
         for epoch in range(total_epochs):
@@ -282,21 +285,21 @@ def change_image(request):
                 if epoch == (total_epochs - 1):
                     # 생성된 이미지 저장
                     noise = np.random.normal(0, 1, (1, latent_dim))
-                generated_image = generator.predict(noise)[0] * 255.0
+                    generated_image = generator.predict(noise)[0] * 255.0
 
-                image_to_save = generated_image.astype(np.uint8)
-                image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)
-                image_path = os.path.join(output_dir, f"generated_image_final_epoch.png")
-                image.save(image_path)
+                    image_to_save = generated_image.astype(np.uint8)
+                    image = Image.fromarray(image_to_save).resize((200, 200), Image.LANCZOS)
+                    image_path = os.path.join(output_dir, f"generated_image_final_epoch.png")
+                    image.save(image_path)
 
-                print(f"generated_image_final_epoch.png 이미지를 {output_dir} 디렉토리에 저장했습니다.")
-                break
-
-        # 새로운 이미지 경로
-        new_image_path = "rnn_app/frontended_save_image"
+                    print(f"generated_image_final_epoch.png 이미지를 {output_dir} 디렉토리에 저장했습니다.")
+                    break
 
         # 새로운 이미지 로드 및 전처리
-        new_image = Image.open(new_image_path)
+        image_files = [f for f in os.listdir(save_path) if f.endswith(('.png', '.jpg', '.jpeg'))]
+        random_image_file = random.choice(image_files)
+        selected_image_path = os.path.join(save_path, random_image_file)
+        new_image = Image.open(selected_image_path)
         new_image = new_image.resize((200, 200))  # 이미지 크기 조정
         new_image = np.array(new_image) / 255.0  # 이미지 스케일링
 
@@ -305,11 +308,29 @@ def change_image(request):
         noise = np.random.normal(0, 1, (1, latent_dim))  # 랜덤 노이즈 생성
         generated_image = generator.predict(noise)[0] * 255.0  # 이미지 생성 및 스케일링
 
+        # 생성된 이미지와 새로운 이미지의 채널 수 맞추기
+        if new_image.shape[-1] != generated_image.shape[-1]:
+            new_image = np.stack([new_image] * generated_image.shape[-1], axis=-1)
+
+        # 이미지의 shape를 출력하여 확인
+        print(f"Generated image shape: {generated_image.shape}")
+        print(f"New image shape: {new_image.shape}")
+
+        # 이미지의 shape가 맞지 않으면 resize를 통해 맞춤
+        if generated_image.shape != new_image.shape:
+            new_image = np.array(
+                Image.fromarray(new_image.astype(np.uint8)).resize((generated_image.shape[1], generated_image.shape[0]),
+                                                                   Image.LANCZOS))
+            print(f"Resized new image shape: {new_image.shape}")
+
+        # shape가 맞는지 다시 확인
+        print(f"After resize, new image shape: {new_image.shape}")
+
         # 생성된 이미지와 새로운 이미지를 결합하여 새로운 이미지 생성
         blended_image = np.clip((generated_image + new_image) / 2.0, 0.0, 255.0)  # 두 이미지를 합쳐서 특정 작업 수행
 
         # 새로운 이미지 저장
-        output_dir = "rnn_app/fianl_emotiart_image"
+        output_dir = "rnn_app/final_emotiart_image"
         os.makedirs(output_dir, exist_ok=True)
         modified_image = Image.fromarray(blended_image.astype(np.uint8))
         modified_image.save(os.path.join(output_dir, 'modified_image.png'))
@@ -317,21 +338,25 @@ def change_image(request):
         # 이미지 변환 작업 완료
         print("이미지 변환 작업이 완료되었습니다.")
 
-        # 저장한 이미지를 읽어와서 반환
-        image_data_list = []
-        final_image_path = "rnn_app/fianl_emotiart_image"
-        for filename in os.listdir(final_image_path):
-            if os.path.isfile(os.path.join(final_image_path, filename)):
-                with open(os.path.join(final_image_path, filename), 'rb') as file:
-                    image_data = file.read()
-                    image_data_list.append(image_data)
-
-        if image_data_list:
-            # 이미지 데이터를 합쳐서 반환
-            combined_image_data = b''.join(image_data_list)
-            return FileResponse(combined_image_data, content_type='image/png')
-        else:
-            return HttpResponseNotFound('No images found in the final_emotiart_image directory.')
+        # 이미지를 바로 클라이언트에 반환
+        img_io = io.BytesIO()
+        modified_image.save(img_io, format='PNG')
+        img_io.seek(0)
+        # # 저장한 이미지를 읽어와서 반환
+        # image_data_list = []
+        # final_image_path = "rnn_app/final_emotiart_image"
+        # for filename in os.listdir(final_image_path):
+        #     if os.path.isfile(os.path.join(final_image_path, filename)):
+        #         with open(os.path.join(final_image_path, filename), 'rb') as file:
+        #             image_data = file.read()
+        #             image_data_list.append(image_data)
+        #
+        # if image_data_list:
+        #     # 이미지 데이터를 합쳐서 반환
+        #     combined_image_data = b''.join(image_data_list)
+        return FileResponse(img_io, content_type='image/png')
+        #else:
+        #return HttpResponseNotFound('No images found in the final_emotiart_image directory.')
     else:
         return JsonResponse({'error': 'No image found in the request or invalid request method.'}, status=400)
 

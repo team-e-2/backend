@@ -46,8 +46,8 @@ TIME_ZONE = 'Asia/Seoul'
 
 
 # 정적 파일 및 미디어 설정
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_URL = ''
+STATICFILES_DIRS = [BASE_DIR / '']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
