@@ -1,6 +1,6 @@
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -161,13 +161,6 @@ def receive_image(request):
                 print(f"Error while deleting {file_path}: {e}")
 
         # 오류가 발생하지 않으면 여기까지 도달
-        return JsonResponse({'result': 'success', 'similar_images': response_data})
+        return JsonResponse({'images': response_data})
     else:
         return JsonResponse({'error': 'No image found in the request.'}, status=400)
-
-
-# @csrf_exempt
-# def return_images(request):
-#     try:
-#
-
