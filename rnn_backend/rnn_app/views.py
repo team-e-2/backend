@@ -1,6 +1,3 @@
-import base64
-import io
-
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
@@ -15,21 +12,9 @@ def receive_image(request):
         # 이미지를 MEDIA_ROOT에 저장
         file_path = default_storage.save('images/' + image_file.name, ContentFile(image_file.read()))
 
-        # 저장된 이미지의 URL을 가져옴
-        file_url = default_storage.url(file_path)
-
-        return JsonResponse({'result': 'success', 'file_url': file_url})
-    else:
-        return JsonResponse({'error': 'No image found in the request.'}, status=400)
-
-
-@csrf_exempt
-def return_images(request):
-    try:
         import os
         import random
         import shutil
-        import mimetypes
         import base64
         import io
 
@@ -163,7 +148,6 @@ def return_images(request):
                 'content': base64.b64encode(img_io.getvalue()).decode('utf-8')
             })
 
-
         # ../media/images/ 디렉토리에 있는 모든 이미지 삭제
         media_images_path = "media/images/"
         for file_name in os.listdir(media_images_path):
@@ -176,13 +160,14 @@ def return_images(request):
             except Exception as e:
                 print(f"Error while deleting {file_path}: {e}")
 
-
-
-
         # 오류가 발생하지 않으면 여기까지 도달
         return JsonResponse({'result': 'success', 'similar_images': response_data})
+    else:
+        return JsonResponse({'error': 'No image found in the request.'}, status=400)
 
-    except Exception as e:
-        # 예외 처리
-        return JsonResponse({'error': str(e)}, status=500)
+
+# @csrf_exempt
+# def return_images(request):
+#     try:
+#
 
